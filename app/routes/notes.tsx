@@ -1,16 +1,15 @@
-import db, { Note } from "../db.server";
+import { withSession } from "../services/sessionStorage";
+import db, { Note } from "../services/db";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   Form,
   MetaFunction,
-  LinksFunction,
   LoaderFunction,
   useRouteData,
   ActionFunction,
   usePendingFormSubmit,
+  redirect,
 } from "remix";
-
-import stylesUrl from "../styles/index.css";
 
 export const meta: MetaFunction = () => {
   return {
@@ -19,27 +18,39 @@ export const meta: MetaFunction = () => {
   };
 };
 
-export const links: LinksFunction = () => {
-  return [{ rel: "stylesheet", href: stylesUrl }];
-};
+export const action: ActionFunction = async ({ request }) =>
+  withSession(request, async (session) => {
+    const formData = new URLSearchParams(await request.text());
 
-export const action: ActionFunction = async ({ request }) => {
-  const formData = new URLSearchParams(await request.text());
+    try {
+      const note = db.notes.create({
+        title: formData.get("title"),
+      });
 
-  const note = db.notes.create({
-    title: formData.get("title") || "",
+      return redirect(`/notes/${note.id}`);
+    } catch (exception) {
+      if (!("name" in exception) || exception.name !== "ValidationException") {
+        throw exception;
+      }
+
+      session.flash("listItemNoteCreationErrors", exception.errors);
+    }
+
+    const { pathname, search } = new URL(request.url);
+    return pathname + search;
   });
 
-  return `/notes/${note.id}`;
-};
-
-export const loader: LoaderFunction = async () => {
-  return db.notes.findAll();
-};
+export const loader: LoaderFunction = async ({ request }) =>
+  withSession(request, (session) => ({
+    notes: db.notes.findAll(),
+    errors: session.get("listItemNoteCreationErrors"),
+  }));
 
 export default function Index() {
   const { pathname } = useLocation();
-  const notes: Note[] = useRouteData();
+
+  const { notes = [], errors } =
+    useRouteData<{ notes: Note[]; errors: string[] }>();
   const pending = usePendingFormSubmit();
 
   return (
@@ -57,14 +68,20 @@ export default function Index() {
                   name="title"
                 />
                 <button className="">Add</button>
+                {errors &&
+                  errors.map(([field, message]) => (
+                    <p key={`${field}:${message}`}>{message}</p>
+                  ))}
               </fieldset>
-            </Form>{" "}
+            </Form>
           </li>
-          {notes.map(({ id, title }) => (
-            <li key={id}>
-              <Link to={`${id}`}>{title}</Link>
-            </li>
-          )).reverse()}
+          {notes
+            .map(({ id, title }) => (
+              <li key={id}>
+                <Link to={`${id}`}>{title}</Link>
+              </li>
+            ))
+            .reverse()}
         </ul>
       </aside>
 

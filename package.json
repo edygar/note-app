@@ -5,10 +5,8 @@
   "license": "",
   "scripts": {
     "build": "remix build",
-    "dev": "concurrently --kill-others \"npm run watch:css\" \"remix run\"",
-    "start": "remix-serve build",
-    "watch:css": "postcss styles --base styles --dir ./app/styles -w",
-    "build:css": "postcss styles --base styles --dir ./app/styles --env production"
+    "dev": "PORT=5000 remix run",
+    "start": "remix-serve build"
   },
   "dependencies": {
     "@remix-run/node": "^0.17.5",
@@ -24,12 +22,6 @@
     "@remix-run/dev": "^0.17.5",
     "@types/react": "^17.0.4",
     "@types/react-dom": "^17.0.4",
-    "autoprefixer": "^10.3.1",
-    "concurrently": "^6.2.0",
-    "postcss": "^8.3.5",
-    "postcss-cli": "^8.3.1",
-    "postcss-import": "^14.0.2",
-    "tailwindcss": "^2.2.4",
     "typescript": "^4.1.2"
   },
   "engines": {
