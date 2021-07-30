@@ -1,6 +1,6 @@
 import { withSession } from "../services/sessionStorage";
 import db, { Note } from "../services/db";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useMatch, useHref } from "react-router-dom";
 import {
   Form,
   MetaFunction,
@@ -46,8 +46,9 @@ export const loader: LoaderFunction = async ({ request }) =>
     errors: session.get("listItemNoteCreationErrors"),
   }));
 
-export default function Index() {
+export default function Notes() {
   const { pathname } = useLocation();
+  const currentPath = useHref(".");
 
   const { notes = [], errors } =
     useRouteData<{ notes: Note[]; errors: string[] }>();
@@ -59,12 +60,14 @@ export default function Index() {
         <h1>Notes</h1>
         <ul>
           <li>
-            <Form action="/notes" method="post">
-              <fieldset disabled={pending && pending.action.endsWith(pathname)}>
+            <Form action={currentPath} method="post">
+              <fieldset
+                disabled={pending && pending.action.endsWith(currentPath)}
+              >
                 <input
                   required
                   key={notes.length}
-                  autoFocus={!!pathname.match(/\/notes\/?(\w+\/?)?$/)}
+                  autoFocus={pathname.endsWith(currentPath)}
                   name="title"
                 />
                 <button className="">Add</button>
